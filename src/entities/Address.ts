@@ -44,6 +44,9 @@ export class Address {
   @Column("boolean", { name: "notifications", default: () => "'false'" })
   notifications: boolean;
 
+  @Column("boolean", { name: "wol", default: () => "'false'" })
+  wol: boolean;
+
   @Column("boolean", { name: "tracking", default: () => "'false'" })
   tracking: boolean;
 

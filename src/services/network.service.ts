@@ -4,12 +4,13 @@ import { Address } from "../entities/Address";
 import { Network } from "../entities/Network";
 import IPCIDR from "ip-cidr";
 import { randomUUIDv7 } from "bun";
+import { filter } from "../utils";
 
 const networkRepo = AppDataSource.getRepository(Network)
 const addressRepo = AppDataSource.getRepository(Address)
 
 export class NetworkService {
-    static async getNetworks() {
+    static async getNetworks(search: string) {
         return await networkRepo.find({
             select: {
                 networkId: true,
@@ -18,14 +19,33 @@ export class NetworkService {
                 location: {
                     locationId: true,
                     name: true
-                }
+                },
+                createdAt: true,
+                updatedAt: true
             },
-            where: {
-                deletedAt: IsNull(),
-                location: {
-                    deletedAt: IsNull()
+            where: [
+                {
+                    name: filter(search),
+                    deletedAt: IsNull(),
+                    location: {
+                        deletedAt: IsNull()
+                    }
+                },
+                {
+                    range: filter(search),
+                    deletedAt: IsNull(),
+                    location: {
+                        deletedAt: IsNull()
+                    }
+                },
+                { 
+                    deletedAt: IsNull(),
+                    location: {
+                        name: filter(search),
+                        deletedAt: IsNull()
+                    }
                 }
-            },
+            ],
             relations: {
                 location: true
             }

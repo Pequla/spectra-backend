@@ -1,13 +1,16 @@
 import { IsNull } from "typeorm";
 import { AppDataSource } from "../db";
 import { Location } from "../entities/Location";
+import { filter } from "../utils";
 
 const repo = AppDataSource.getRepository(Location)
 
 export class LocationService {
-    static async getLocations() {
+    static async getLocations(search: string
+    ) {
         return await repo.find({
             where: {
+                name: filter(search),
                 deletedAt: IsNull()
             }
         })

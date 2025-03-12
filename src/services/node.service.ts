@@ -64,6 +64,8 @@ export class NodeService {
                 addressId: true,
                 value: true,
                 mac: true,
+                token: true,
+                wol: true
             },
             where: {
                 networkId: node.networkId,
@@ -107,9 +109,6 @@ export class NodeService {
                     address.online = modelResponse.alive
                     address.mac = modelResponse.mac
                     address.lastReportAt = new Date(modelResponse.timestamp)
-                    if (address.notifications && modelResponse.alive == false) {
-                        console.log('Send email for ' + address.value)
-                    }
                 }
             }
         }

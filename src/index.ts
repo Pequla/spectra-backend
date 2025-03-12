@@ -5,6 +5,10 @@ import dotenv from "dotenv"
 import { AppDataSource } from './db'
 import { authenticateToken, notFoundResponse } from './utils'
 import { NodeRoute } from './routes/node.route'
+import { UserRoute } from './routes/user.route'
+import { NetworkRoute } from './routes/network.route'
+import { LocationRoute } from './routes/location.route'
+import { AddressRoute } from './routes/address.route'
 
 // Setting up web server
 const app = express()
@@ -25,7 +29,11 @@ AppDataSource.initialize()
     .catch((error: any) => console.log(error))
 
 app.use(authenticateToken)
+app.use('/api/user', UserRoute)
 app.use('/api/node', NodeRoute)
+app.use('/api/network', NetworkRoute)
+app.use('/api/location', LocationRoute)
+app.use('/api/address', AddressRoute)
 
 // Default not found page
 app.get('*', function (req, res) {

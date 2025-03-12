@@ -19,9 +19,9 @@ export class UserService {
         const user = await this.findByUsername(model.username)
         if (await bcrypt.compare(model.password, user.password)) {
             return {
-                access: jwt.sign({ name: user.userId, display: user.username }, accessSecret, { expiresIn: accessExpire }),
-                refresh: jwt.sign({ name: user.userId, display: user.username }, refreshSecret, { expiresIn: refreshExpire }),
-                name: user.username
+                access: jwt.sign({ name: user.userId, display: user.displayName }, accessSecret, { expiresIn: accessExpire }),
+                refresh: jwt.sign({ name: user.userId, display: user.displayName }, refreshSecret, { expiresIn: refreshExpire }),
+                name: user.displayName
             };
         }
         throw new Error('BAD_CREDENTIALS')
