@@ -42,15 +42,14 @@ export class UserService {
 
     static async findByUsername(username: string) {
         const data = await repo.findOne({
-            where: {
-                username: username,
-                active: true
-            }
-        })
-
-        if (data == undefined)
-            throw new Error('BAD_CREDENTIALS')
-
-        return data
+            where: [
+                { username: username, active: true },
+                { email: username, active: true }
+            ]
+        });
+    
+        if (!data) throw new Error('BAD_CREDENTIALS');
+    
+        return data;
     }
 }
