@@ -12,6 +12,7 @@ import { AddressRoute } from './routes/address.route'
 
 // Setting up web server
 const app = express()
+app.set('trust proxy', true)
 app.use(express.json())
 app.use(morgan('short'))
 app.use(cors())

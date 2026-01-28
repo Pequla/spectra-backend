@@ -19,8 +19,8 @@ export class UserService {
         const user = await this.findByUsername(model.username)
         if (await bcrypt.compare(model.password, user.password)) {
             return {
-                access: jwt.sign({ name: user.userId, display: user.displayName }, accessSecret, { expiresIn: accessExpire }),
-                refresh: jwt.sign({ name: user.userId, display: user.displayName }, refreshSecret, { expiresIn: refreshExpire }),
+                access: jwt.sign({ id: user.userId, display: user.displayName }, accessSecret, { expiresIn: accessExpire }),
+                refresh: jwt.sign({ id: user.userId, display: user.displayName }, refreshSecret, { expiresIn: refreshExpire }),
                 name: user.displayName
             };
         }
@@ -31,7 +31,7 @@ export class UserService {
         try {
             const decoded: any = jwt.verify(refresh, refreshSecret as string)
             return {
-                access: jwt.sign({ name: decoded.name, display: decoded.display }, accessSecret, { expiresIn: accessExpire }),
+                access: jwt.sign({ id: decoded.id, display: decoded.display }, accessSecret, { expiresIn: accessExpire }),
                 refresh: refresh,
                 name: decoded.display
             }

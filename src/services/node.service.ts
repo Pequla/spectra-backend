@@ -5,12 +5,13 @@ import type { Request } from "express";
 import { Address } from "../entities/Address";
 import type { NodeModel } from "../models/node.model";
 import { NetworkService } from "./network.service";
+import { filter } from "../utils";
 
 const nodeRepo = AppDataSource.getRepository(Node)
 const addressRepo = AppDataSource.getRepository(Address)
 
 export class NodeService {
-    static async getNodes() {
+    static async getNodes(search: string) {
         return await nodeRepo.find({
             select: {
                 nodeId: true,
@@ -19,13 +20,72 @@ export class NodeService {
                 lastReportAt: true,
                 network: {
                     networkId: true,
-                    range: true
+                    range: true,
+                    name: true,
+                    location: {
+                        locationId: true,
+                        name: true
+                    }
+                }
+            },
+            where: [
+                {
+                    name: filter(search),
+                    deletedAt: IsNull(),
+                    network: {
+                        deletedAt: IsNull()
+                    }
+                },
+                {
+                    deletedAt: IsNull(),
+                    network: {
+                        name: filter(search),
+                        deletedAt: IsNull()
+                    }
+                },
+                {
+                    deletedAt: IsNull(),
+                    network: {
+                        range: filter(search),
+                        deletedAt: IsNull()
+                    }
+                }
+            ],
+            relations: {
+                network: {
+                    location: true
+                }
+            }
+        })
+    }
+
+    static async getNodeById(id: number) {
+        return await nodeRepo.findOne({
+            select: {
+                nodeId: true,
+                name: true,
+                address: true,
+                lastReportAt: true,
+                network: {
+                    networkId: true,
+                    range: true,
+                    name: true,
+                    location: {
+                        locationId: true,
+                        name: true
+                    }
                 }
             },
             where: {
+                nodeId: id,
                 deletedAt: IsNull(),
                 network: {
                     deletedAt: IsNull()
+                }
+            },
+            relations: {
+                network: {
+                    location: true
                 }
             }
         })
@@ -46,7 +106,7 @@ export class NodeService {
             throw new Error('INVALID_NODE')
 
         node.lastReportAt = new Date()
-        node.address = req.ip || 'localhost'
+        node.address = req.ip || req.socket.remoteAddress || 'localhost'
         await nodeRepo.save(node)
 
         // Generate addresses if network is empty
@@ -116,7 +176,7 @@ export class NodeService {
         await addressRepo.save(addresses)
 
         node.lastReportAt = new Date()
-        node.address = req.ip || 'localhost'
+        node.address = req.ip || req.socket.remoteAddress || 'localhost'
         await nodeRepo.save(node)
     }
 
