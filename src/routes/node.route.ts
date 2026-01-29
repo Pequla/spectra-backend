@@ -59,7 +59,8 @@ NodeRoute.get('/:id/terminal', async (req, res) => {
 NodeRoute.post('/:id/terminal', async (req: any, res) => {
     try {
         const id = retrieveIdFromPath(req)
-        res.json(await TerminalService.createCommand(id, req.user.id, req.body))
+        await TerminalService.createCommand(id, req.user.id, req.body)
+        res.sendStatus(204)
     } catch (e) {
         sendError(res, e)
     }
