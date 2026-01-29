@@ -33,6 +33,11 @@ export class Command {
   })
   createdAt: Date;
 
+  @Column("datetime", {
+    name: "received_at",
+  })
+  receivedAt: Date;
+
   @ManyToOne(() => Node, (node) => node.commands, {
     onDelete: "CASCADE",
     onUpdate: "CASCADE",

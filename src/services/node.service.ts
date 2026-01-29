@@ -91,7 +91,7 @@ export class NodeService {
         })
     }
 
-    static async getNodeDataByToken(req: Request) {
+    static async retrieveNodeByTokenAndRegisterActivity(req: Request) {
         const node = await nodeRepo.findOne({
             where: {
                 token: this.getTokenFromRequest(req),
@@ -107,7 +107,11 @@ export class NodeService {
 
         node.lastReportAt = new Date()
         node.address = req.ip || req.socket.remoteAddress || 'localhost'
-        await nodeRepo.save(node)
+        return await nodeRepo.save(node)
+    }
+
+    static async getNodeDataByToken(req: Request) {
+        const node = await this.retrieveNodeByTokenAndRegisterActivity(req)
 
         // Generate addresses if network is empty
         const count = await addressRepo.countBy({

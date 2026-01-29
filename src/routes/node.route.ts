@@ -6,7 +6,7 @@ import { TerminalService } from "../services/terminal.service";
 export const NodeRoute = Router()
 
 NodeRoute.get('/', async (req, res) => {
-    try { 
+    try {
         const search = req.query.search as string
         res.json(await NodeService.getNodes(search))
     } catch (e) {
@@ -15,7 +15,7 @@ NodeRoute.get('/', async (req, res) => {
 })
 
 NodeRoute.get('/heartbeat', async (req, res) => {
-    try { 
+    try {
         res.json(await NodeService.getNodeDataByToken(req))
     } catch (e) {
         sendError(res, e)
@@ -23,8 +23,25 @@ NodeRoute.get('/heartbeat', async (req, res) => {
 })
 
 NodeRoute.post('/heartbeat', async (req, res) => {
-    try { 
+    try {
         res.json(await NodeService.saveNodeDataByToken(req))
+    } catch (e) {
+        sendError(res, e)
+    }
+})
+
+NodeRoute.get('/retrieve-commands', async (req, res) => {
+    try {
+        res.json(await TerminalService.getCommandsByNodeToken(req))
+    } catch (e) {
+        sendError(res, e)
+    }
+})
+
+NodeRoute.post('/command-reply', async (req, res) => {
+    try {
+        await TerminalService.updateCommandReplyByNodeTokenAndCommandId(req)
+        res.sendStatus(204)
     } catch (e) {
         sendError(res, e)
     }

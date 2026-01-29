@@ -77,7 +77,7 @@ export function splitFilter(search: string) {
 dotenv.config();
 export function authenticateToken(req: Request, res: Response, next: Function) {
     const publicPaths = [
-        '/api/user/login', '/api/user/refresh', '/api/node/heartbeat'
+        '/api/user/login', '/api/user/refresh', '/api/node/heartbeat', '/api/node/retrieve-commands', '/api/node/command-reply'
     ]
 
     if (publicPaths.includes(req.path)) {
