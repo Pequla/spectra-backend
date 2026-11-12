@@ -26,6 +26,9 @@ export class User {
   @Column("boolean", { name: "notifications", default: () => "'true'" })
   notifications: boolean;
 
+  @Column("boolean", { name: "is_admin", default: () => "'false'" })
+  isAdmin: boolean;
+
   @Column("datetime", { name: "last_login_at", nullable: true })
   lastLoginAt: Date | null;
 }

@@ -8,6 +8,7 @@ import { Location } from "./entities/Location";
 import { Node } from "./entities/Node";
 import { Command } from "./entities/Command";
 import { Reply } from "./entities/Reply";
+import { UserNetwork } from "./entities/UserNetwork";
 
 // Connecting to database
 dotenv.config();
@@ -19,7 +20,7 @@ export const AppDataSource = new DataSource({
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
     entities: [
-        Address, Location, Log, Network, Node, User, Command, Reply
+        Address, Location, Log, Network, Node, User, Command, Reply, UserNetwork
     ],
     logging: false,
 })

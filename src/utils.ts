@@ -36,7 +36,13 @@ export function sendErrorResponse(res: Response, code = 400, msg = "BAD_REQUEST"
 }
 
 export function sendError(res: Response, e: any) {
-    res.status(500).json({
+    const status = {
+        UNAUTHORIZED: 401,
+        FORBIDDEN: 403,
+        NOT_FOUND: 404
+    }[e.message as 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND'] ?? 500
+
+    res.status(status).json({
         message: e.message,
         timestamp: new Date()
     })

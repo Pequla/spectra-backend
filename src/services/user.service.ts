@@ -18,10 +18,12 @@ export class UserService {
     static async login(model: LoginModel) {
         const user = await this.findByUsername(model.username)
         if (await bcrypt.compare(model.password, user.password)) {
+            await repo.update(user.userId, { lastLoginAt: new Date() })
             return {
-                access: jwt.sign({ id: user.userId, display: user.displayName }, accessSecret, { expiresIn: accessExpire }),
-                refresh: jwt.sign({ id: user.userId, display: user.displayName }, refreshSecret, { expiresIn: refreshExpire }),
-                name: user.displayName
+                access: jwt.sign({ id: user.userId, display: user.displayName, isAdmin: user.isAdmin }, accessSecret, { expiresIn: accessExpire }),
+                refresh: jwt.sign({ id: user.userId, display: user.displayName, isAdmin: user.isAdmin }, refreshSecret, { expiresIn: refreshExpire }),
+                name: user.displayName,
+                isAdmin: user.isAdmin
             };
         }
         throw new Error('BAD_CREDENTIALS')
@@ -30,10 +32,26 @@ export class UserService {
     static async refreshToken(refresh: string) {
         try {
             const decoded: any = jwt.verify(refresh, refreshSecret as string)
+
+            const user = await repo.findOne({
+                where: {
+                    userId: decoded.id,
+                    active: true
+                }
+            })
+
+            if (user == null)
+                throw new Error('UNAUTHORIZED')
+
             return {
-                access: jwt.sign({ id: decoded.id, display: decoded.display }, accessSecret, { expiresIn: accessExpire }),
+                access: jwt.sign({
+                    id: user.userId,
+                    display: user.displayName,
+                    isAdmin: user.isAdmin
+                }, accessSecret, { expiresIn: accessExpire }),
                 refresh: refresh,
-                name: decoded.display
+                name: user.displayName,
+                isAdmin: user.isAdmin
             }
         } catch (err) {
             throw new Error('REFRESH_FAILED')
@@ -47,9 +65,30 @@ export class UserService {
                 { email: username, active: true }
             ]
         });
-    
+
         if (!data) throw new Error('BAD_CREDENTIALS');
-    
+
         return data;
+    }
+
+    public static async getCurrentUser(userId: number) {
+        const user = await repo.findOne({
+            where: {
+                userId: userId,
+                active: true
+            }
+        })
+
+        if (user == null)
+            throw new Error('UNAUTHORIZED')
+
+        return user
+    }
+
+    public static async requireAdmin(userId: number) {
+        const user = await this.getCurrentUser(userId)
+
+        if (!user.isAdmin)
+            throw new Error('FORBIDDEN')
     }
 }

@@ -1,16 +1,72 @@
-import { IsNull } from "typeorm";
 import { AppDataSource } from "../db";
 import { Address } from "../entities/Address";
 import { Network } from "../entities/Network";
 import IPCIDR from "ip-cidr";
 import { randomUUIDv7 } from "bun";
 import { filter } from "../utils";
+import { UserNetwork } from "../entities/UserNetwork";
+import { In, IsNull } from "typeorm"
+import { UserService } from "./user.service";
 
 const networkRepo = AppDataSource.getRepository(Network)
 const addressRepo = AppDataSource.getRepository(Address)
+const userNetworkRepo = AppDataSource.getRepository(UserNetwork)
 
 export class NetworkService {
-    static async getNetworks(search: string) {
+    static async getNetworks(search: string, userId: number) {
+        const user = await UserService.getCurrentUser(userId)
+
+        let allowedNetworkIds: number[] = []
+
+        if (!user.isAdmin) {
+            const userNetworks = await userNetworkRepo.find({
+                select: {
+                    networkId: true
+                },
+                where: {
+                    userId: user.userId,
+                    deletedAt: IsNull()
+                }
+            })
+
+            allowedNetworkIds = userNetworks.map(x => x.networkId)
+
+            if (allowedNetworkIds.length === 0)
+                return []
+        }
+
+        const where = [
+            {
+                name: filter(search),
+                deletedAt: IsNull(),
+                location: {
+                    deletedAt: IsNull()
+                }
+            },
+            {
+                range: filter(search),
+                deletedAt: IsNull(),
+                location: {
+                    deletedAt: IsNull()
+                }
+            },
+            {
+                deletedAt: IsNull(),
+                location: {
+                    name: filter(search),
+                    deletedAt: IsNull()
+                }
+            }
+        ]
+
+        if (!user.isAdmin) {
+            for (const condition of where) {
+                Object.assign(condition, {
+                    networkId: In(allowedNetworkIds)
+                })
+            }
+        }
+
         return await networkRepo.find({
             select: {
                 networkId: true,
@@ -23,36 +79,29 @@ export class NetworkService {
                 createdAt: true,
                 updatedAt: true
             },
-            where: [
-                {
-                    name: filter(search),
-                    deletedAt: IsNull(),
-                    location: {
-                        deletedAt: IsNull()
-                    }
-                },
-                {
-                    range: filter(search),
-                    deletedAt: IsNull(),
-                    location: {
-                        deletedAt: IsNull()
-                    }
-                },
-                { 
-                    deletedAt: IsNull(),
-                    location: {
-                        name: filter(search),
-                        deletedAt: IsNull()
-                    }
-                }
-            ],
+            where: where,
             relations: {
                 location: true
             }
         })
     }
 
-    static async getNetworkById(id: number) {
+    static async getNetworkById(id: number, userId: number) {
+        const user = await UserService.getCurrentUser(userId)
+
+        if (!user.isAdmin) {
+            const allowed = await userNetworkRepo.exists({
+                where: {
+                    userId: user.userId,
+                    networkId: id,
+                    deletedAt: IsNull()
+                }
+            })
+
+            if (!allowed)
+                throw new Error('NOT_FOUND')
+        }
+
         const data = await networkRepo.findOne({
             where: {
                 networkId: id,
@@ -69,10 +118,11 @@ export class NetworkService {
         return data
     }
 
-    static async createNetwork(model: Network) {
-        if (!IPCIDR.isValidCIDR(model.range)) {
+    static async createNetwork(model: Network, userId: number) {
+        await UserService.requireAdmin(userId)
+
+        if (!IPCIDR.isValidCIDR(model.range))
             throw new Error("INVALID_CIDR_FORMAT")
-        }
 
         const newNetwork = await networkRepo.save({
             name: model.name,
@@ -107,16 +157,20 @@ export class NetworkService {
         await addressRepo.save(arr)
     }
 
-    static async updateNetwork(id: number, model: Network) {
-        const data = await this.getNetworkById(id)
+    static async updateNetwork(id: number, model: Network, userId: number) {
+        await UserService.requireAdmin(userId)
+
+        const data = await this.getNetworkById(id, userId)
         data.name = model.name
         data.range = model.range
         data.updatedAt = new Date()
         await networkRepo.save(data)
     }
 
-    static async deleteNetwork(id: number) {
-        const data = await this.getNetworkById(id)
+    static async deleteNetwork(id: number, userId: number) {
+        await UserService.requireAdmin(userId)
+
+        const data = await this.getNetworkById(id, userId)
         data.deletedAt = new Date()
         await networkRepo.save(data)
     }
