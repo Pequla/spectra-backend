@@ -1,14 +1,14 @@
-import { Router } from "express";
-import { NodeService } from "../services/node.service";
-import { retrieveIdFromPath, sendError } from "../utils";
-import { TerminalService } from "../services/terminal.service";
+import { Router } from "express"
+import { NodeService } from "../services/node.service"
+import { retrieveIdFromPath, sendError } from "../utils"
+import { TerminalService } from "../services/terminal.service"
 
 export const NodeRoute = Router()
 
-NodeRoute.get('/', async (req, res) => {
+NodeRoute.get('/', async (req: any, res) => {
     try {
         const search = req.query.search as string
-        res.json(await NodeService.getNodes(search))
+        res.json(await NodeService.getNodes(search, req.user.id))
     } catch (e) {
         sendError(res, e)
     }
@@ -47,10 +47,10 @@ NodeRoute.post('/command-reply', async (req, res) => {
     }
 })
 
-NodeRoute.get('/:id/terminal', async (req, res) => {
+NodeRoute.get('/:id/terminal', async (req: any, res) => {
     try {
         const id = retrieveIdFromPath(req)
-        res.json(await TerminalService.getLastCommandsByNodeId(id))
+        res.json(await TerminalService.getLastCommandsByNodeId(id, req.user.id))
     } catch (e) {
         sendError(res, e)
     }
@@ -66,10 +66,10 @@ NodeRoute.post('/:id/terminal', async (req: any, res) => {
     }
 })
 
-NodeRoute.get('/:id', async (req, res) => {
+NodeRoute.get('/:id', async (req: any, res) => {
     try {
         const id = retrieveIdFromPath(req)
-        res.json(await NodeService.getNodeById(id))
+        res.json(await NodeService.getNodeById(id, req.user.id))
     } catch (e) {
         sendError(res, e)
     }

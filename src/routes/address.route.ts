@@ -1,22 +1,22 @@
-import { Router } from "express";
-import { retrieveIdFromPath, sendError } from "../utils";
-import { AddressService } from "../services/address.service";
+import { Router } from "express"
+import { retrieveIdFromPath, sendError } from "../utils"
+import { AddressService } from "../services/address.service"
 
 export const AddressRoute = Router()
 
-AddressRoute.get('/:id', async (req, res) => {
+AddressRoute.get('/:id', async (req: any, res) => {
     try {
         const id = retrieveIdFromPath(req)
-        res.json(await AddressService.getAddressById(id))
+        res.json(await AddressService.getAddressById(id, req.user.id))
     } catch (e) {
         sendError(res, e)
     }
 })
 
-AddressRoute.put('/:id', async (req, res) => {
+AddressRoute.put('/:id', async (req: any, res) => {
     try {
         const id = retrieveIdFromPath(req)
-        await AddressService.updateAddress(id, req.body)
+        await AddressService.updateAddress(id, req.body, req.user.id)
         res.status(204).send()
     } catch (e) {
         sendError(res, e)

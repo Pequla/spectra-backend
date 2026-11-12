@@ -1,7 +1,8 @@
-import { IsNull } from "typeorm";
-import { AppDataSource } from "../db";
-import { Location } from "../entities/Location";
-import { filter } from "../utils";
+import { IsNull } from "typeorm"
+import { AppDataSource } from "../db"
+import { Location } from "../entities/Location"
+import { filter } from "../utils"
+import { UserService } from "./user.service"
 
 const repo = AppDataSource.getRepository(Location)
 
@@ -30,21 +31,24 @@ export class LocationService {
         return data
     }
 
-    static async createLocation(model: Location) {
+    static async createLocation(model: Location, userId: number) {
+        await UserService.requireAdmin(userId)
         await repo.save({
             name: model.name,
             createdAt: new Date()
         })
     }
 
-    static async updateLocation(id: number, model: Location) {
+    static async updateLocation(id: number, model: Location, userId: number) {
+        await UserService.requireAdmin(userId)
         const data = await this.getLocationById(id)
         data.name = model.name
         data.updatedAt = new Date()
         await repo.save(data)
     }
 
-    static async deleteLocation(id: number) {
+    static async deleteLocation(id: number, userId: number) {
+        await UserService.requireAdmin(userId)
         const data = await this.getLocationById(id)
         data.deletedAt = new Date()
         await repo.save(data)

@@ -1,16 +1,17 @@
-import type { Request } from "express";
-import { AppDataSource } from "../db";
-import { Command } from "../entities/Command";
-import { Reply } from "../entities/Reply";
-import { NodeService } from "./node.service";
-import { In, IsNull } from "typeorm";
-import { retrieveIdFromPath } from "../utils";
+import type { Request } from "express"
+import { AppDataSource } from "../db"
+import { Command } from "../entities/Command"
+import { Reply } from "../entities/Reply"
+import { NodeService } from "./node.service"
+import { In, IsNull } from "typeorm"
+import { retrieveIdFromPath } from "../utils"
 
 const commandRepo = AppDataSource.getRepository(Command)
 const replyRepo = AppDataSource.getRepository(Reply)
 
 export class TerminalService {
-    static async getLastCommandsByNodeId(id: number) {
+    static async getLastCommandsByNodeId(id: number, userId: number) {
+        await NodeService.getNodeById(id, userId)
         const data = await commandRepo.find({
             where: {
                 nodeId: id
@@ -47,7 +48,8 @@ export class TerminalService {
         )
     }
 
-    static async createCommand(node: number, user: any, data: any) {
+    static async createCommand(node: number, user: number, data: any) {
+        await NodeService.getNodeById(node, user)
         await commandRepo.save({
             nodeId: node,
             userId: user,

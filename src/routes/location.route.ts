@@ -1,6 +1,6 @@
-import { Router } from "express";
-import { retrieveIdFromPath, sendError } from "../utils";
-import { LocationService } from "../services/location.service";
+import { Router } from "express"
+import { retrieveIdFromPath, sendError } from "../utils"
+import { LocationService } from "../services/location.service"
 
 export const LocationRoute = Router()
 
@@ -22,29 +22,29 @@ LocationRoute.get('/:id', async (req, res) => {
     }
 })
 
-LocationRoute.post('/', async (req, res) => {
+LocationRoute.post('/', async (req: any, res) => {
     try {
-        await LocationService.createLocation(req.body)
+        await LocationService.createLocation(req.body, req.user.id)
         res.status(204).send()
     } catch (e) {
         sendError(res, e)
     }
 })
 
-LocationRoute.put('/:id', async (req, res) => {
+LocationRoute.put('/:id', async (req: any, res) => {
     try {
         const id = retrieveIdFromPath(req)
-        await LocationService.updateLocation(id, req.body)
+        await LocationService.updateLocation(id, req.body, req.user.id)
         res.status(204).send()
     } catch (e) {
         sendError(res, e)
     }
 })
 
-LocationRoute.delete('/:id', async (req, res) => {
+LocationRoute.delete('/:id', async (req: any, res) => {
     try {
         const id = retrieveIdFromPath(req)
-        await LocationService.deleteLocation(id)
+        await LocationService.deleteLocation(id, req.user.id)
         res.status(204).send()
     } catch (e) {
         sendError(res, e)

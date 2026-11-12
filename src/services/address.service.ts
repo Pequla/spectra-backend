@@ -1,7 +1,9 @@
-import { IsNull } from "typeorm";
-import { AppDataSource } from "../db";
-import { Address } from "../entities/Address";
-import { filter } from "../utils";
+import { IsNull } from "typeorm"
+import { AppDataSource } from "../db"
+import { Address } from "../entities/Address"
+import { filter } from "../utils"
+import { NetworkService } from "./network.service"
+import { UserService } from "./user.service"
 
 const repo = AppDataSource.getRepository(Address)
 
@@ -57,7 +59,7 @@ export class AddressService {
         })
     }
 
-    static async getAddressById(id: number) {
+    static async getAddressById(id: number, userId: number) {
         const data = await repo.findOne({
             where: {
                 addressId: id,
@@ -71,13 +73,22 @@ export class AddressService {
         if (data == null)
             throw new Error('NOT_FOUND')
 
+        await NetworkService.getNetworkById(data.networkId, userId)
+
         return data
     }
 
-    static async updateAddress(id: number, model: Address) {
-        const data = await this.getAddressById(id)
-        data.networkId = model.networkId
-        data.value = model.value
+    static async updateAddress(id: number, model: Address, userId: number) {
+        const data = await this.getAddressById(id, userId)
+        const user = await UserService.getCurrentUser(userId)
+
+        if (user.isAdmin) {
+            if (model.networkId !== data.networkId)
+                await NetworkService.getNetworkById(model.networkId, userId)
+
+            data.networkId = model.networkId
+            data.value = model.value
+        }
         data.label = model.label
         data.device = model.device
         data.mac = model.mac

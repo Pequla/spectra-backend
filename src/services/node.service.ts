@@ -1,34 +1,43 @@
-import { In, IsNull } from "typeorm";
-import { AppDataSource } from "../db";
-import { Node } from "../entities/Node";
-import type { Request } from "express";
-import { Address } from "../entities/Address";
-import type { NodeModel } from "../models/node.model";
-import { NetworkService } from "./network.service";
-import { filter } from "../utils";
+import { In, IsNull } from "typeorm"
+import { AppDataSource } from "../db"
+import { Node } from "../entities/Node"
+import type { Request } from "express"
+import { Address } from "../entities/Address"
+import type { NodeModel } from "../models/node.model"
+import { NetworkService } from "./network.service"
+import { filter } from "../utils"
+import { UserService } from "./user.service"
+import { UserNetwork } from "../entities/UserNetwork"
+import { Network } from "../entities/Network"
 
 const nodeRepo = AppDataSource.getRepository(Node)
 const addressRepo = AppDataSource.getRepository(Address)
+const userNetworkRepo = AppDataSource.getRepository(UserNetwork)
+const networkRepo = AppDataSource.getRepository(Network)
 
 export class NodeService {
-    static async getNodes(search: string) {
-        return await nodeRepo.find({
-            select: {
-                nodeId: true,
-                name: true,
-                address: true,
-                lastReportAt: true,
-                network: {
-                    networkId: true,
-                    range: true,
-                    name: true,
-                    location: {
-                        locationId: true,
-                        name: true
-                    }
+    static async getNodes(search: string, userId: number) {
+        const user = await UserService.getCurrentUser(userId)
+        let allowedNetworkIds: number[] = []
+
+        if (!user.isAdmin) {
+            const allocations = await userNetworkRepo.find({
+                select: {
+                    networkId: true
+                },
+                where: {
+                    userId: user.userId,
+                    deletedAt: IsNull()
                 }
-            },
-            where: [
+            })
+
+            allowedNetworkIds = allocations.map(x => x.networkId)
+
+            if (allowedNetworkIds.length === 0)
+                return []
+        }
+
+        const where = [
                 {
                     name: filter(search),
                     deletedAt: IsNull(),
@@ -50,7 +59,33 @@ export class NodeService {
                         deletedAt: IsNull()
                     }
                 }
-            ],
+        ]
+
+        if (!user.isAdmin) {
+            for (const condition of where) {
+                Object.assign(condition.network, {
+                    networkId: In(allowedNetworkIds)
+                })
+            }
+        }
+
+        return await nodeRepo.find({
+            select: {
+                nodeId: true,
+                name: true,
+                address: true,
+                lastReportAt: true,
+                network: {
+                    networkId: true,
+                    range: true,
+                    name: true,
+                    location: {
+                        locationId: true,
+                        name: true
+                    }
+                }
+            },
+            where: where,
             relations: {
                 network: {
                     location: true
@@ -59,8 +94,8 @@ export class NodeService {
         })
     }
 
-    static async getNodeById(id: number) {
-        return await nodeRepo.findOne({
+    static async getNodeById(id: number, userId: number) {
+        const data = await nodeRepo.findOne({
             select: {
                 nodeId: true,
                 name: true,
@@ -89,6 +124,13 @@ export class NodeService {
                 }
             }
         })
+
+        if (data == null)
+            throw new Error('NOT_FOUND')
+
+        await NetworkService.getNetworkById(data.network.networkId, userId)
+
+        return data
     }
 
     static async retrieveNodeByTokenAndRegisterActivity(req: Request) {
@@ -119,7 +161,15 @@ export class NodeService {
         })
 
         if (count == 0) {
-            const network = await NetworkService.getNetworkById(node.networkId)
+            const network = await networkRepo.findOne({
+                where: {
+                    networkId: node.networkId,
+                    deletedAt: IsNull()
+                }
+            })
+
+            if (network == null)
+                throw new Error('NOT_FOUND')
             await NetworkService.generateNetworkAddresses(node.networkId, network.range)
         }
 
@@ -160,6 +210,7 @@ export class NodeService {
         const addresses = await addressRepo.find({
             where: {
                 addressId: In(model.report.map(a => a.addressId)),
+                networkId: node.networkId,
                 deletedAt: IsNull(),
                 network: {
                     deletedAt: IsNull()
